@@ -1,0 +1,43 @@
+{
+  "api": {
+    "cloudprojectapi": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn"
+          ],
+          "category": "function",
+          "resourceName": "cloudFilesHandler"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "API Gateway"
+    }
+  },
+  "function": {
+    "cloudFilesHandler": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_cloudFilesHandler_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "cloudFilesHandler"
+        }
+      ]
+    },
+    "AMPLIFY_function_cloudFilesHandler_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "cloudFilesHandler"
+        }
+      ]
+    }
+  }
+}
