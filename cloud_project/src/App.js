@@ -4,9 +4,6 @@ import React, { useState } from 'react';
 import Amplify, { API } from 'aws-amplify';
 import './App.css';
 
-Amplify.configure({
-    // Your Amplify configuration goes here
-});
 
 const myAPI = "cloudprojectapi";
 const path = '/items'; // The path set up in your REST API
