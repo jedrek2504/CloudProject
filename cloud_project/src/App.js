@@ -34,7 +34,7 @@ const App = () => {
                     {message && (
                         <p>Response from backend: {message}</p>
                     )}
-                    <button onClick={signOut}>Sign Out</button>
+                    <button onClick={signOut}>Sign Out</button>`
                 </div>
             )}
         </Authenticator>
