@@ -25,5 +25,11 @@ export type AmplifyDependentResourcesAttributes = {
       "Name": "string",
       "Region": "string"
     }
+  },
+  "storage": {
+    "s3bucket": {
+      "BucketName": "string",
+      "Region": "string"
+    }
   }
 }

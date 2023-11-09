@@ -1,0 +1,14 @@
+{
+  "resourceName": "s3bucket",
+  "policyUUID": "6723c8f7",
+  "bucketName": "cloudprojects3bucket",
+  "storageAccess": "auth",
+  "guestAccess": [],
+  "authAccess": [
+    "CREATE_AND_UPDATE",
+    "READ",
+    "DELETE"
+  ],
+  "triggerFunction": "NONE",
+  "groupAccess": {}
+}
