@@ -1,8 +1,10 @@
 // App.js
 
 import React, { useState } from 'react';
-import Amplify, { API } from 'aws-amplify';
+import { API } from 'aws-amplify';
 import './App.css';
+import {Authenticator} from "@aws-amplify/ui-react";
+import '@aws-amplify/ui-react/styles.css';
 
 
 const myAPI = "cloudprojectapi";
@@ -24,13 +26,18 @@ const App = () => {
     };
 
     return (
-        <div className="App">
-            <h1>Connect Front to Back</h1>
-            <button onClick={fetchMessage}>Fetch Message</button>
-            {message && (
-                <p>Response from backend: {message}</p>
+        <Authenticator>
+            {({signOut}) => (
+                <div className="App">
+                    <h1>Connect Front to Back</h1>
+                    <button onClick={fetchMessage}>Fetch Message</button>
+                    {message && (
+                        <p>Response from backend: {message}</p>
+                    )}
+                    <button onClick={signOut}>Sign Out</button>
+                </div>
             )}
-        </div>
+        </Authenticator>
     );
 };
 

@@ -20,6 +20,9 @@
       },
       "api": {
         "cloudprojectapi": {}
+      },
+      "auth": {
+        "cloudprojectd09d3ea3": {}
       }
     }
   }
