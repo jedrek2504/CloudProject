@@ -37,15 +37,19 @@ const App = () => {
     };
 
     const deleteFile = async (key) => {
+        console.log(`Attempting to delete file with key: ${key}`); // Debugging log
         try {
             await Storage.remove(key);
-            fetchItems(); // To refresh the list after delete
+            console.log(`File deleted successfully: ${key}`); // Confirm deletion
+            fetchItems(); // Refresh the list after deletion
         } catch (error) {
             console.error('Error deleting file:', error);
         }
     };
 
+
     const downloadFile = async (key) => {
+        console.log(`Attempting to download file with key: ${key}`); // Add this line
         try {
             const file = await Storage.get(key, { download: true });
             window.location.href = file; // This will download the file
@@ -53,6 +57,7 @@ const App = () => {
             console.error('Error downloading file:', error);
         }
     };
+
 
     const onFileChange = (e) => {
         const file = e.target.files[0];
