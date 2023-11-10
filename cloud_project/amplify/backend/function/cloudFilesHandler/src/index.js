@@ -19,7 +19,9 @@ exports.handler = async (event) => {
 
         // Extract the file information from the S3 response
         const items = s3Response.Contents.map(file => {
-            return { key: file.Key, size: file.Size };
+            // Remove the 'public/' prefix from the key
+            const keyWithoutPrefix = file.Key.replace(/^public\//, '');
+            return { key: keyWithoutPrefix, size: file.Size };
         });
 
         // Return the file list as the response

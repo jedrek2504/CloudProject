@@ -50,24 +50,6 @@
       "service": "Lambda"
     }
   },
-  "parameters": {
-    "AMPLIFY_function_cloudFilesHandler_deploymentBucketName": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "cloudFilesHandler"
-        }
-      ]
-    },
-    "AMPLIFY_function_cloudFilesHandler_s3Key": {
-      "usedBy": [
-        {
-          "category": "function",
-          "resourceName": "cloudFilesHandler"
-        }
-      ]
-    }
-  },
   "storage": {
     "s3bucket": {
       "dependsOn": [],
