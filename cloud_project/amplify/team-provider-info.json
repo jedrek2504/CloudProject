@@ -15,7 +15,7 @@
       "function": {
         "cloudFilesHandler": {
           "deploymentBucketName": "amplify-cloudproject-dev-183954-deployment",
-          "s3Key": "amplify-builds/cloudFilesHandler-6d364e2b553551673449-build.zip"
+          "s3Key": "amplify-builds/cloudFilesHandler-514a6f2b7a727a4d3770-build.zip"
         }
       },
       "api": {

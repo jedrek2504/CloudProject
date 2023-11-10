@@ -4,24 +4,24 @@ import './App.css';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 
-const myAPI = "cloudprojectapi";
-const path = '/items'; // The path set up in your REST API
+const myAPI = "cloudprojectapi"; // This should match your Amplify API name
+const path = '/items'; // The path you configured in your API Gateway
 
 const App = () => {
     const [items, setItems] = useState([]);
 
-    // Function to fetch items from our backend
-    const fetchItems = async () => {
-        try {
-            const apiResponse = await API.get(myAPI, path);
-            const itemList = JSON.parse(apiResponse); // parsing the response because it's a JSON string
-            setItems(itemList);
-        } catch (error) {
-            console.error('Error fetching items from S3', error);
-        }
-    };
-
     useEffect(() => {
+        // Function to fetch items from our backend
+        const fetchItems = async () => {
+            try {
+                // API.get automatically parses the JSON response for you
+                const apiResponse = await API.get(myAPI, path);
+                setItems(apiResponse);
+            } catch (error) {
+                console.error('Error fetching items from S3', error);
+            }
+        };
+
         fetchItems(); // Fetch items when the component mounts
     }, []);
 
