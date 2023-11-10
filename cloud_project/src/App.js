@@ -10,6 +10,7 @@ const path = '/items';
 const App = () => {
     const [items, setItems] = useState([]);
     const [file, setFile] = useState(undefined);
+    const [downloadedImageUrl, setDownloadedImageUrl] = useState(null);
 
     useEffect(() => {
         fetchItems();
@@ -51,8 +52,10 @@ const App = () => {
     const downloadFile = async (key) => {
         console.log(`Attempting to download file with key: ${key}`); // Add this line
         try {
-            const file = await Storage.get(key, { download: true });
-            window.location.href = file; // This will download the file
+            const file = await Storage.get(key, { expires:60});
+            console.log(file);
+            setDownloadedImageUrl(file);
+            //window.location.href = file; // This will download the file
         } catch (error) {
             console.error('Error downloading file:', error);
         }
@@ -84,6 +87,9 @@ const App = () => {
                             </ul>
                         ) : (
                             <Text>No items in S3 bucket to display.</Text>
+                        )}
+                        {downloadedImageUrl && (
+                            <img src={downloadedImageUrl} alt="Downloaded Image" />
                         )}
                         <Button onClick={signOut}>Sign Out</Button>
                     </Flex>
