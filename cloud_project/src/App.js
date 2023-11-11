@@ -19,14 +19,12 @@ const App = () => {
     const fetchItems = async () => {
         try {
             const identityId = (await Auth.currentUserCredentials()).identityId;
+            console.log("Cognito Identity ID in React app:", identityId);
             const token = (await Auth.currentSession()).getIdToken().getJwtToken();
-            console.log(identityId); // Get the current Cognito identity ID
             const apiResponse = await API.get(myAPI, path, {
                 headers: {
                     Authorization: `Bearer ${token}`,
-                },
-                queryStringParameters: {
-                    owner: identityId,
+                    'X-Identity-Id': identityId, // Pass the identityId as a custom header
                 },
             });
             console.log(apiResponse);

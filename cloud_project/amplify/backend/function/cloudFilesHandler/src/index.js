@@ -12,7 +12,9 @@ const myBucketName = 'cloudprojects3bucket183954-dev';
  */
 exports.handler = async (event) => {
     try {
-        const cognitoIdentityId = event.requestContext?.identity?.cognitoIdentityId;
+        console.log("Received event:", JSON.stringify(event, null, 2));
+        const cognitoIdentityId = event.headers['X-Identity-Id'] || event.headers['x-identity-id']; // Headers are case-insensitive
+        console.log("Cognito Identity ID in Lambda:", cognitoIdentityId);
         // Fetch the list of items from S3
         const s3Response = await s3.listObjectsV2({
             Bucket: myBucketName,
