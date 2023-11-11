@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API, Storage } from 'aws-amplify';
+import { API, Storage,Auth } from 'aws-amplify';
 import './App.css';
 import { Authenticator, Button, Flex, Text, View, withAuthenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
@@ -18,7 +18,17 @@ const App = () => {
 
     const fetchItems = async () => {
         try {
-            const apiResponse = await API.get(myAPI, path);
+            const identityId = (await Auth.currentSession()).getIdToken().getJwtToken();
+            console.log(identityId); // Get the current Cognito identity ID
+            const apiResponse = await API.get(myAPI, path, {
+                headers: {
+                    Authorization: `Bearer ${identityId}`,
+                },
+                queryStringParameters: {
+                    owner: identityId,
+                },
+            });
+            console.log(apiResponse);
             setItems(apiResponse);
         } catch (error) {
             console.error('Error fetching items from S3', error);
@@ -27,8 +37,13 @@ const App = () => {
 
     const uploadFile = async () => {
         try {
+            const identityId = (await Auth.currentSession()).getIdToken().getJwtToken();
             if (file) {
-                const result = await Storage.put(file.name, file);
+                const result = await Storage.put(file.name, file, {
+                    metadata: {
+                        owner: identityId, // Set the owner metadata
+                    },
+                });
                 console.log(result);
                 fetchItems(); // To refresh the list after upload
             }

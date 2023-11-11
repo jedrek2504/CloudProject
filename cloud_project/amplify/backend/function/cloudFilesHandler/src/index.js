@@ -12,13 +12,17 @@ const myBucketName = 'cloudprojects3bucket183954-dev';
  */
 exports.handler = async (event) => {
     try {
+        const cognitoIdentityId = event.requestContext?.identity?.cognitoIdentityId;
+        console.log(cognitoIdentityId);
         // Fetch the list of items from S3
         const s3Response = await s3.listObjectsV2({
             Bucket: myBucketName,
         }).promise();
 
         // Extract the file information from the S3 response
-        const items = s3Response.Contents.map(file => {
+        const items = s3Response.Contents
+        .filter(file => file.TagCount > 0 && file.TagSet.find(tag => tag.Key === 'Owner' && tag.Value === cognitoIdentityId))
+        .map(file => {
             // Remove the 'public/' prefix from the key
             const keyWithoutPrefix = file.Key.replace(/^public\//, '');
             return { key: keyWithoutPrefix, size: file.Size };
@@ -31,7 +35,7 @@ exports.handler = async (event) => {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "*"
             },
-            body: JSON.stringify(items),
+            body: JSON.stringify(items + cognitoIdentityId),
         };
 
     } catch (error) {
@@ -42,7 +46,7 @@ exports.handler = async (event) => {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "*"
             },
-            body: JSON.stringify('Error fetching from S3'),
+            body: JSON.stringify('Error fetching from S3'+ error.message),
         };
     }
 };
