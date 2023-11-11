@@ -18,11 +18,12 @@ const App = () => {
 
     const fetchItems = async () => {
         try {
-            const identityId = (await Auth.currentSession()).getIdToken().getJwtToken();
+            const identityId = (await Auth.currentUserCredentials()).identityId;
+            const token = (await Auth.currentSession()).getIdToken().getJwtToken();
             console.log(identityId); // Get the current Cognito identity ID
             const apiResponse = await API.get(myAPI, path, {
                 headers: {
-                    Authorization: `Bearer ${identityId}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 queryStringParameters: {
                     owner: identityId,
@@ -37,7 +38,7 @@ const App = () => {
 
     const uploadFile = async () => {
         try {
-            const identityId = (await Auth.currentSession()).getIdToken().getJwtToken();
+            const identityId = (await Auth.currentUserCredentials()).identityId;
             if (file) {
                 const result = await Storage.put(file.name, file, {
                     metadata: {

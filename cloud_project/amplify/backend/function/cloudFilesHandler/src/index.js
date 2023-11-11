@@ -13,7 +13,6 @@ const myBucketName = 'cloudprojects3bucket183954-dev';
 exports.handler = async (event) => {
     try {
         const cognitoIdentityId = event.requestContext?.identity?.cognitoIdentityId;
-        console.log(cognitoIdentityId);
         // Fetch the list of items from S3
         const s3Response = await s3.listObjectsV2({
             Bucket: myBucketName,
@@ -35,7 +34,7 @@ exports.handler = async (event) => {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "*"
             },
-            body: JSON.stringify(items + cognitoIdentityId),
+            body: JSON.stringify(items),
         };
 
     } catch (error) {
