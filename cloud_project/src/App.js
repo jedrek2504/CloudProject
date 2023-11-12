@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { API, Storage,Auth } from 'aws-amplify';
+import { API, Storage, Auth } from 'aws-amplify';
 import './App.css';
 import { Authenticator, Button, Flex, Text, View, withAuthenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
+import HomePage from './view/HomePage';
 
 const myAPI = "cloudprojectapi";
 const path = '/items';
@@ -66,7 +67,7 @@ const App = () => {
     const downloadFile = async (key) => {
         console.log(`Attempting to download file with key: ${key}`); // Add this line
         try {
-            const file = await Storage.get(key, { expires:60});
+            const file = await Storage.get(key, { expires: 60 });
             console.log(file);
             setDownloadedImageUrl(file);
             //window.location.href = file; // This will download the file
@@ -84,30 +85,15 @@ const App = () => {
     return (
         <Authenticator>
             {({ signOut }) => (
-                <View className="App">
-                    <Flex direction="column" alignItems="center" justifyContent="center">
-                        <Text variant="h1">Cloud Project S3 Bucket Contents</Text>
-                        <input type="file" onChange={onFileChange} />
-                        <Button onClick={uploadFile}>Upload</Button>
-                        {items.length > 0 ? (
-                            <ul>
-                                {items.map((item, index) => (
-                                    <li key={index}>
-                                        Key: {item.key}, Size: {item.size}
-                                        <Button onClick={() => downloadFile(item.key)}>Download</Button>
-                                        <Button onClick={() => deleteFile(item.key)}>Delete</Button>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <Text>No items in S3 bucket to display.</Text>
-                        )}
-                        {downloadedImageUrl && (
-                            <img src={downloadedImageUrl} alt="Downloaded Image" />
-                        )}
-                        <Button onClick={signOut}>Sign Out</Button>
-                    </Flex>
-                </View>
+                <HomePage
+                    items={items}
+                    onFileChange={onFileChange}
+                    uploadFile={uploadFile}
+                    downloadFile={downloadFile}
+                    deleteFile={deleteFile}
+                    signOut={signOut}
+                    downloadedImageUrl={downloadedImageUrl}
+                />
             )}
         </Authenticator>
     );
