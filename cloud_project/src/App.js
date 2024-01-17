@@ -52,17 +52,20 @@ const App = () => {
         }
     };
 
-    const deleteFile = async (key) => {
-        console.log(`Attempting to delete file with key: ${key}`); // Debugging log
+    const deleteFile = async (key, versionId) => { // Add versionId parameter
+        console.log(`Attempting to delete file with key: ${key} and versionId: ${versionId}`); // Debugging log
         try {
-            await Storage.remove(key);
-            console.log(`File deleted successfully: ${key}`); // Confirm deletion
+            const deleteParams = {
+                Key: key
+            };
+            if (versionId) deleteParams.VersionId = versionId; // Add the versionId to the delete parameters if provided
+            await Storage.remove(key, { deleteParams });
+            console.log(`File deleted successfully: ${key} version: ${versionId}`); // Confirm deletion
             fetchItems(); // Refresh the list after deletion
         } catch (error) {
             console.error('Error deleting file:', error);
         }
     };
-
 
     const downloadFile = async (key) => {
         console.log(`Attempting to download file with key: ${key}`); // Add this line
