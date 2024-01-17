@@ -2,13 +2,13 @@ import React from 'react';
 import { Flex, Text, View, Button } from '@aws-amplify/ui-react';
 import Navbar from './NavBar';
 
-const HomePage = ({ items, onFileChange, uploadFile, downloadFile, deleteFile, signOut, downloadedImageUrl }) => (
+const HomePage = ({ items, onFileChange, handleUpload, downloadFile, deleteFile, signOut, downloadedImageUrl }) => (
     <View className="App">
         <Navbar signOut={signOut} />
         <Flex direction="column" alignItems="center" justifyContent="center">
             <Text variant="h1">Cloud Project S3 Bucket Contents</Text>
-            <input type="file" onChange={onFileChange} />
-            <Button onClick={uploadFile}>Upload</Button>
+            <input type="file" multiple onChange={onFileChange}/>
+            <Button onClick={handleUpload}>Upload</Button>
             {items.length > 0 ? (
                 <ul>
                     {items.map((item, index) => (
