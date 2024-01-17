@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { API, Storage, Auth } from 'aws-amplify';
+import React, {useState, useEffect} from 'react';
+import {API, Storage, Auth} from 'aws-amplify';
 import './App.css';
-import { Authenticator, Button, Flex, Text, View, withAuthenticator } from '@aws-amplify/ui-react';
+import {Authenticator, withAuthenticator} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import HomePage from './view/HomePage';
 
@@ -20,15 +20,13 @@ const App = () => {
     const fetchItems = async () => {
         try {
             const identityId = (await Auth.currentUserCredentials()).identityId;
-            console.log("Cognito Identity ID in React app:", identityId);
             const token = (await Auth.currentSession()).getIdToken().getJwtToken();
             const apiResponse = await API.get(myAPI, path, {
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    'X-Identity-Id': identityId, // Pass the identityId as a custom header
+                    'X-Identity-Id': identityId,
                 },
             });
-            console.log(apiResponse);
             setItems(apiResponse);
         } catch (error) {
             console.error('Error fetching items from S3', error);
@@ -41,10 +39,9 @@ const App = () => {
             if (file) {
                 const result = await Storage.put(file.name, file, {
                     metadata: {
-                        owner: identityId, // Set the owner metadata
+                        owner: identityId,
                     },
                 });
-                console.log(result);
                 fetchItems(); // To refresh the list after upload
             }
         } catch (error) {
@@ -52,42 +49,35 @@ const App = () => {
         }
     };
 
-    const deleteFile = async (key, versionId) => { // Add versionId parameter
-        console.log(`Attempting to delete file with key: ${key} and versionId: ${versionId}`); // Debugging log
+    const deleteFile = async (key, versionId) => {
         try {
-            const deleteParams = {
-                Key: key
-            };
-            if (versionId) deleteParams.VersionId = versionId; // Add the versionId to the delete parameters if provided
-            await Storage.remove(key, { deleteParams });
-            console.log(`File deleted successfully: ${key} version: ${versionId}`); // Confirm deletion
+            await Storage.remove(key, {versionId});
             fetchItems(); // Refresh the list after deletion
         } catch (error) {
             console.error('Error deleting file:', error);
         }
     };
 
-    const downloadFile = async (key) => {
-        console.log(`Attempting to download file with key: ${key}`); // Add this line
+    const downloadFile = async (key, versionId) => {
         try {
-            const file = await Storage.get(key, { expires: 60 });
-            console.log(file);
-            setDownloadedImageUrl(file);
-            //window.location.href = file; // This will download the file
+            const url = await Storage.get(key, {
+                versionId,
+                expires: 60 // URL expires in 60 seconds
+            });
+            setDownloadedImageUrl(url);
+            // window.location.href = url; // This will download the file
         } catch (error) {
             console.error('Error downloading file:', error);
         }
     };
 
-
     const onFileChange = (e) => {
-        const file = e.target.files[0];
-        setFile(file);
+        setFile(e.target.files[0]);
     };
 
     return (
         <Authenticator>
-            {({ signOut }) => (
+            {({signOut}) => (
                 <HomePage
                     items={items}
                     onFileChange={onFileChange}
