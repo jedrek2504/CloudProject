@@ -14,8 +14,8 @@ const HomePage = ({ items, onFileChange, handleUpload, downloadFile, deleteFile,
                     {items.map((item, index) => (
                         <li key={index}>
                             Key: {item.key}, Size: {item.size}
-                            <Button onClick={() => downloadFile(item.key)}>Download</Button>
-                            <Button onClick={() => deleteFile(item.key)}>Delete</Button>
+                            <Button onClick={() => downloadFile(item.key, item.versionId)}>Download</Button>
+                            <Button onClick={() => deleteFile(item.key, item.versionId)}>Delete</Button>
                         </li>
                     ))}
                 </ul>

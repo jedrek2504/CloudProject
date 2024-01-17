@@ -54,20 +54,34 @@ const App = () => {
         fetchItems();
     };
 
-    const deleteFile = async (key) => {
+    const deleteFile = async (key, versionId) => { // Add versionId parameter
+        console.log(`Attempting to delete file with key: ${key} and versionId: ${versionId}`); // Debugging log
         try {
-            await Storage.remove(key);
-            fetchItems();
+            const deleteParams = {
+                Key: key
+            };
+            if (versionId) deleteParams.VersionId = versionId; // Add the versionId to the delete parameters if provided
+            await Storage.remove(key, { deleteParams });
+            console.log(`File deleted successfully: ${key} version: ${versionId}`); // Confirm deletion
+            fetchItems(); // Refresh the list after deletion
         } catch (error) {
             console.error('Error deleting file:', error);
         }
     };
 
-    const downloadFile = async (key) => {
+    const downloadFile = async (key, versionId) => {
         try {
-            const url = await Storage.get(key, {expires: 60}); // URL expires in 60 seconds
-            setDownloadedImageUrl(url);
-            // window.location.href = url; // This will download the file
+            const signedUrl = await Storage.get(key, {
+                versionId: versionId, // Specify the versionId for the download
+                expires: 60 // URL expires in 60 seconds
+            });
+            const downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            downloadLink.href = signedUrl;
+            downloadLink.target = '_blank';
+            downloadLink.download = key;
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
         } catch (error) {
             console.error('Error downloading file:', error);
         }
