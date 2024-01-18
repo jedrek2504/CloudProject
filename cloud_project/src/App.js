@@ -17,6 +17,16 @@ const App = () => {
         fetchItems();
     }, []);
 
+    // Inside App component
+    const [versionHistoryVisible, setVersionHistoryVisible] = useState({});
+
+    const toggleVersionHistory = (key) => {
+        setVersionHistoryVisible(prevState => ({
+            ...prevState,
+            [key]: !prevState[key]
+        }));
+    };
+
     const fetchItems = async () => {
         const identityId = (await Auth.currentUserCredentials()).identityId;
         const token = (await Auth.currentSession()).getIdToken().getJwtToken();
@@ -62,8 +72,8 @@ const App = () => {
                     VersionId: versionId
                 }
             });
-            // Filter out the deleted item and update the state.
-            setItems(prevItems => prevItems.filter(item => item.key !== key));
+            // Instead of trying to filter out the deleted item, simply re-fetch the items
+            fetchItems();
         } catch (error) {
             console.error('Error deleting file:', error);
         }
@@ -102,6 +112,8 @@ const App = () => {
                     downloadFile={downloadFile}
                     deleteFile={deleteFile}
                     signOut={signOut}
+                    toggleVersionHistory={toggleVersionHistory}
+                    versionHistoryVisible={versionHistoryVisible}
                 />
             )}
         </Authenticator>

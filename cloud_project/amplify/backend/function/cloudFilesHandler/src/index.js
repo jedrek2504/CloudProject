@@ -4,7 +4,6 @@ const myBucketName = 'cloudprojects3bucket183954-dev';
 
 exports.handler = async (event) => {
     console.log("Received event:", JSON.stringify(event, null, 2));
-    const cognitoIdentityId = event.requestContext.authorizer.claims.sub;
 
     try {
         console.log("Fetching list of object versions from S3");
@@ -13,40 +12,43 @@ exports.handler = async (event) => {
             Prefix: 'public/'
         }).promise();
 
-        console.log("S3 listObjectVersions response:", JSON.stringify(s3Response, null, 2));
+        // First, filter out delete markers and map versions
+        const versionsWithoutDeleteMarkers = s3Response.Versions
+            .filter(version => !version.IsDeleteMarker)
+            .map(version => ({
+                key: version.Key.replace(/^public\//, ''),
+                versionId: version.VersionId,
+                size: version.Size,
+                lastModified: version.LastModified,
+                isLatest: version.IsLatest
+            }));
 
-        if (!s3Response.Versions) {
-            console.error("No versions found in the response.");
-            return {
-                statusCode: 500,
-                headers: {
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Headers": "*"
-                },
-                body: JSON.stringify({ error: "No versions found in the S3 response." }),
-            };
-        }
+        // Group the filtered versions by their keys
+        const itemsWithVersions = versionsWithoutDeleteMarkers.reduce((acc, version) => {
+            (acc[version.key] = acc[version.key] || []).push(version);
+            return acc;
+        }, {});
 
-        const items = s3Response.Versions
-            .filter(version => version.IsLatest && !version.IsDeleteMarker)
-            .map(version => {
-                const keyWithoutPrefix = version.Key.replace(/^public\//, '');
-                return {
-                    key: keyWithoutPrefix,
-                    size: version.Size,
-                    versionId: version.VersionId,
-                    lastModified: version.LastModified
-                };
-            });
+        // Filter out keys that only have delete markers as the latest version
+        const itemsToReturn = Object.keys(itemsWithVersions).reduce((acc, key) => {
+            const latestVersion = itemsWithVersions[key].find(version => version.isLatest);
+            if (latestVersion) {
+                acc.push({
+                    key,
+                    versions: itemsWithVersions[key].sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified))
+                });
+            }
+            return acc;
+        }, []);
 
-        console.log("Mapped items to return:", JSON.stringify(items, null, 2));
+        console.log("Mapped items with versions to return:", JSON.stringify(itemsToReturn, null, 2));
         return {
             statusCode: 200,
             headers: {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "*"
             },
-            body: JSON.stringify(items),
+            body: JSON.stringify(itemsToReturn),
         };
     } catch (error) {
         console.error("Error fetching from S3:", error);
