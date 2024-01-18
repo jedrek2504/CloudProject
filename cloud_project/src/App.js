@@ -1,113 +1,120 @@
-import React, { useState, useEffect } from 'react';
-import { API, Storage,Auth } from 'aws-amplify';
+import React, {useState, useEffect} from 'react';
+import {API, Storage, Auth} from 'aws-amplify';
 import './App.css';
-import { Authenticator, Button, Flex, Text, View, withAuthenticator } from '@aws-amplify/ui-react';
+import {Authenticator, Button, withAuthenticator} from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
+import HomePage from './view/HomePage';
+import JSZip from 'jszip';
 
 const myAPI = "cloudprojectapi";
 const path = '/items';
 
 const App = () => {
     const [items, setItems] = useState([]);
-    const [file, setFile] = useState(undefined);
-    const [downloadedImageUrl, setDownloadedImageUrl] = useState(null);
+    const [selectedFiles, setSelectedFiles] = useState([]);
 
     useEffect(() => {
         fetchItems();
     }, []);
 
+    // Inside App component
+    const [versionHistoryVisible, setVersionHistoryVisible] = useState({});
+
+    const toggleVersionHistory = (key) => {
+        setVersionHistoryVisible(prevState => ({
+            ...prevState,
+            [key]: !prevState[key]
+        }));
+    };
+
     const fetchItems = async () => {
-        try {
-            const identityId = (await Auth.currentUserCredentials()).identityId;
-            console.log("Cognito Identity ID in React app:", identityId);
-            const token = (await Auth.currentSession()).getIdToken().getJwtToken();
-            const apiResponse = await API.get(myAPI, path, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'X-Identity-Id': identityId, // Pass the identityId as a custom header
-                },
-            });
-            console.log(apiResponse);
-            setItems(apiResponse);
-        } catch (error) {
-            console.error('Error fetching items from S3', error);
-        }
+        const identityId = (await Auth.currentUserCredentials()).identityId;
+        const token = (await Auth.currentSession()).getIdToken().getJwtToken();
+        const apiResponse = await API.get(myAPI, path, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'X-Identity-Id': identityId,
+            },
+        });
+        // Filter out items with delete markers.
+        const formattedItems = apiResponse.filter(item => !item.deleteMarker).map(item => ({
+            ...item,
+            lastModified: new Date(item.lastModified).toLocaleString() // Display formatted date
+        }));
+        setItems(formattedItems);
     };
 
-    const uploadFile = async () => {
-        try {
-            const identityId = (await Auth.currentUserCredentials()).identityId;
-            if (file) {
-                const result = await Storage.put(file.name, file, {
-                    metadata: {
-                        owner: identityId, // Set the owner metadata
-                    },
-                });
-                console.log(result);
-                fetchItems(); // To refresh the list after upload
+    const handleUpload = async () => {
+        const identityId = (await Auth.currentUserCredentials()).identityId;
+        if (selectedFiles.length > 1) {
+            const zip = new JSZip();
+            for (const file of selectedFiles) {
+                zip.file(file.name, file);
             }
-        } catch (error) {
-            console.error('Error uploading file:', error);
+            const content = await zip.generateAsync({type: "blob"});
+            await Storage.put(`archive-${Date.now()}.zip`, content, {
+                metadata: {owner: identityId}
+            });
+        } else {
+            const file = selectedFiles[0];
+            await Storage.put(file.name, file, {
+                metadata: {owner: identityId}
+            });
         }
+        fetchItems();
     };
 
-    const deleteFile = async (key) => {
-        console.log(`Attempting to delete file with key: ${key}`); // Debugging log
+    const deleteFile = async (key, versionId) => {
         try {
-            await Storage.remove(key);
-            console.log(`File deleted successfully: ${key}`); // Confirm deletion
-            fetchItems(); // Refresh the list after deletion
+            await Storage.remove(key, {
+                deleteParams: {
+                    Key: key,
+                    VersionId: versionId
+                }
+            });
+            // Instead of trying to filter out the deleted item, simply re-fetch the items
+            fetchItems();
         } catch (error) {
             console.error('Error deleting file:', error);
         }
     };
 
 
-    const downloadFile = async (key) => {
-        console.log(`Attempting to download file with key: ${key}`); // Add this line
+    const downloadFile = async (key, versionId) => {
         try {
-            const file = await Storage.get(key, { expires:60});
-            console.log(file);
-            setDownloadedImageUrl(file);
-            //window.location.href = file; // This will download the file
+            const signedUrl = await Storage.get(key, {
+                versionId: versionId,
+                expires: 60
+            });
+            const downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            downloadLink.href = signedUrl;
+            downloadLink.target = '_blank';
+            downloadLink.download = key;
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
         } catch (error) {
             console.error('Error downloading file:', error);
         }
     };
 
-
     const onFileChange = (e) => {
-        const file = e.target.files[0];
-        setFile(file);
+        setSelectedFiles(e.target.files); // Update the state with the selected files
     };
 
     return (
         <Authenticator>
-            {({ signOut }) => (
-                <View className="App">
-                    <Flex direction="column" alignItems="center" justifyContent="center">
-                        <Text variant="h1">Cloud Project S3 Bucket Contents</Text>
-                        <input type="file" onChange={onFileChange} />
-                        <Button onClick={uploadFile}>Upload</Button>
-                        {items.length > 0 ? (
-                            <ul>
-                                {items.map((item, index) => (
-                                    <li key={index}>
-                                        Key: {item.key}, Size: {item.size}
-                                        <Button onClick={() => downloadFile(item.key)}>Download</Button>
-                                        <Button onClick={() => deleteFile(item.key)}>Delete</Button>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <Text>No items in S3 bucket to display.</Text>
-                        )}
-                        {downloadedImageUrl && (
-                            <img src={downloadedImageUrl} alt="Downloaded Image" />
-                        )}
-                        <Button onClick={signOut}>Sign Out</Button>
-                    </Flex>
-                </View>
+            {({signOut}) => (
+                <HomePage
+                    items={items}
+                    onFileChange={onFileChange}
+                    handleUpload={handleUpload}
+                    downloadFile={downloadFile}
+                    deleteFile={deleteFile}
+                    signOut={signOut}
+                    toggleVersionHistory={toggleVersionHistory}
+                    versionHistoryVisible={versionHistoryVisible}
+                />
             )}
         </Authenticator>
     );

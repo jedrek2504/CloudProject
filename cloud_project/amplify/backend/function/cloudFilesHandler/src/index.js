@@ -1,50 +1,64 @@
 const AWS = require('aws-sdk');
-
-// Initialize the S3 service object
 const s3 = new AWS.S3();
-
-// The name of the bucket
 const myBucketName = 'cloudprojects3bucket183954-dev';
 
 exports.handler = async (event) => {
+    console.log("Received event:", JSON.stringify(event, null, 2));
+
     try {
-        const cognitoIdentityId = event.headers['X-Identity-Id'] || event.headers['x-identity-id'];
+        console.log("Fetching list of object versions from S3");
+        const s3Response = await s3.listObjectVersions({
+            Bucket: myBucketName,
+            Prefix: 'public/'
+        }).promise();
 
-        // Fetch the list of items from S3
-        const s3Response = await s3.listObjectsV2({ Bucket: myBucketName }).promise();
-        const itemsWithMetadata = [];
+        // First, filter out delete markers and map versions
+        const versionsWithoutDeleteMarkers = s3Response.Versions
+            .filter(version => !version.IsDeleteMarker)
+            .map(version => ({
+                key: version.Key.replace(/^public\//, ''),
+                versionId: version.VersionId,
+                size: version.Size,
+                lastModified: version.LastModified,
+                isLatest: version.IsLatest
+            }));
 
-        for (const object of s3Response.Contents) {
-            const headResponse = await s3.headObject({ Bucket: myBucketName, Key: object.Key }).promise();
-            const metadataIdentityId = headResponse.Metadata['owner'];
+        // Group the filtered versions by their keys
+        const itemsWithVersions = versionsWithoutDeleteMarkers.reduce((acc, version) => {
+            (acc[version.key] = acc[version.key] || []).push(version);
+            return acc;
+        }, {});
 
-            if (metadataIdentityId === cognitoIdentityId) {
-                itemsWithMetadata.push({
-                    key: object.Key.replace(/^public\//, ''),
-                    size: object.Size
+        // Filter out keys that only have delete markers as the latest version
+        const itemsToReturn = Object.keys(itemsWithVersions).reduce((acc, key) => {
+            const latestVersion = itemsWithVersions[key].find(version => version.isLatest);
+            if (latestVersion) {
+                acc.push({
+                    key,
+                    versions: itemsWithVersions[key].sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified))
                 });
             }
-        }
+            return acc;
+        }, []);
 
+        console.log("Mapped items with versions to return:", JSON.stringify(itemsToReturn, null, 2));
         return {
             statusCode: 200,
             headers: {
                 "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Identity-Id",
-                "Access-Control-Allow-Methods": "GET,POST,OPTIONS,PUT,DELETE"
+                "Access-Control-Allow-Headers": "*"
             },
-            body: JSON.stringify(itemsWithMetadata),
+            body: JSON.stringify(itemsToReturn),
         };
     } catch (error) {
-        console.error('Error fetching items from S3', error);
+        console.error("Error fetching from S3:", error);
         return {
             statusCode: 500,
             headers: {
                 "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Identity-Id",
-                "Access-Control-Allow-Methods": "GET,POST,OPTIONS,PUT,DELETE"
+                "Access-Control-Allow-Headers": "*"
             },
-            body: JSON.stringify({ message: 'Error fetching from S3', details: error.message }),
+            body: JSON.stringify({ error: 'Error fetching from S3', details: error.message }),
         };
     }
 };
