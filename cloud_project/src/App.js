@@ -12,7 +12,6 @@ const path = '/items';
 const App = () => {
     const [items, setItems] = useState([]);
     const [selectedFiles, setSelectedFiles] = useState([]);
-    const [downloadedImageUrl, setDownloadedImageUrl] = useState(null);
 
     useEffect(() => {
         fetchItems();
@@ -74,8 +73,8 @@ const App = () => {
     const downloadFile = async (key, versionId) => {
         try {
             const signedUrl = await Storage.get(key, {
-                versionId: versionId, // Specify the versionId for the download
-                expires: 60 // URL expires in 60 seconds
+                versionId: versionId,
+                expires: 60
             });
             const downloadLink = document.createElement("a");
             document.body.appendChild(downloadLink);
@@ -103,7 +102,6 @@ const App = () => {
                     downloadFile={downloadFile}
                     deleteFile={deleteFile}
                     signOut={signOut}
-                    downloadedImageUrl={downloadedImageUrl}
                 />
             )}
         </Authenticator>
