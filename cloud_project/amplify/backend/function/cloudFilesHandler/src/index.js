@@ -15,8 +15,20 @@ exports.handler = async (event) => {
 
         console.log("S3 listObjectVersions response:", JSON.stringify(s3Response, null, 2));
 
+        if (!s3Response.Versions) {
+            console.error("No versions found in the response.");
+            return {
+                statusCode: 500,
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "*"
+                },
+                body: JSON.stringify({ error: "No versions found in the S3 response." }),
+            };
+        }
+
         const items = s3Response.Versions
-            .filter(version => !version.IsDeleteMarker)
+            .filter(version => version.IsLatest && !version.IsDeleteMarker)
             .map(version => {
                 const keyWithoutPrefix = version.Key.replace(/^public\//, '');
                 return {
@@ -44,7 +56,7 @@ exports.handler = async (event) => {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Headers": "*"
             },
-            body: JSON.stringify('Error fetching from S3: ' + error.message),
+            body: JSON.stringify({ error: 'Error fetching from S3', details: error.message }),
         };
     }
 };

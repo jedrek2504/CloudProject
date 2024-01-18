@@ -27,7 +27,8 @@ const App = () => {
                 'X-Identity-Id': identityId,
             },
         });
-        const formattedItems = apiResponse.map(item => ({
+        // Filter out items with delete markers.
+        const formattedItems = apiResponse.filter(item => !item.deleteMarker).map(item => ({
             ...item,
             lastModified: new Date(item.lastModified).toLocaleString() // Display formatted date
         }));
@@ -54,20 +55,21 @@ const App = () => {
         fetchItems();
     };
 
-    const deleteFile = async (key, versionId) => { // Add versionId parameter
-        console.log(`Attempting to delete file with key: ${key} and versionId: ${versionId}`); // Debugging log
+    const deleteFile = async (key, versionId) => {
         try {
-            const deleteParams = {
-                Key: key
-            };
-            if (versionId) deleteParams.VersionId = versionId; // Add the versionId to the delete parameters if provided
-            await Storage.remove(key, { deleteParams });
-            console.log(`File deleted successfully: ${key} version: ${versionId}`); // Confirm deletion
-            fetchItems(); // Refresh the list after deletion
+            await Storage.remove(key, {
+                deleteParams: {
+                    Key: key,
+                    VersionId: versionId
+                }
+            });
+            // Filter out the deleted item and update the state.
+            setItems(prevItems => prevItems.filter(item => item.key !== key));
         } catch (error) {
             console.error('Error deleting file:', error);
         }
     };
+
 
     const downloadFile = async (key, versionId) => {
         try {
