@@ -3,6 +3,7 @@ const s3 = new AWS.S3();
 const myBucketName = 'cloudprojects3bucket183954-dev';
 
 exports.handler = async (event) => {
+    console.log("Received event:", JSON.stringify(event, null, 2));
     const cognitoIdentityId = event.headers['X-Identity-Id'] || event.headers['x-identity-id'];
 
     try {
@@ -20,44 +21,38 @@ exports.handler = async (event) => {
             }).promise();
             return headObjectResponse.Metadata['owner'] || '';
         };
-        
-        const allVersions = await Promise.all(s3Response.Versions
-    .filter(version => !version.IsDeleteMarker)
-    .map(async version => {
-        const owner = await getObjectOwner(version.Key, version.VersionId);
 
-        return {
-            key: version.Key.replace(/^public\//, ''),
-            versionId: version.VersionId,
-            size: version.Size,
-            lastModified: version.LastModified,
-            isLatest: version.IsLatest,
-            owner: owner
-        };
-    }));
-
-
-        const filteredVersions = allVersions.filter(version => version.owner === cognitoIdentityId);
+        // First, filter out delete markers and map versions
+        const versionsWithMetadata = await Promise.all(s3Response.Versions.filter(version => !version.IsDeleteMarker).map(async version => {
+            const owner = await getObjectOwner(version.Key, version.VersionId);
+            return {
+                key: version.Key.replace(/^public\//, ''),
+                versionId: version.VersionId,
+                size: version.Size,
+                lastModified: version.LastModified,
+                isLatest: version.IsLatest,
+                owner: owner
+            };
+        }));
 
         // Group the filtered versions by their keys
-        const itemsWithVersions = filteredVersions.reduce((acc, version) => {
+        const itemsWithVersions = versionsWithMetadata.reduce((acc, version) => {
             (acc[version.key] = acc[version.key] || []).push(version);
             return acc;
         }, {});
-        console.log("items",itemsWithVersions);
+
         // Filter out keys that only have delete markers as the latest version
+        // and apply user filter
         const itemsToReturn = Object.keys(itemsWithVersions).reduce((acc, key) => {
-    // Sort versions for the specific key by modification date in descending order
-        const sortedVersions = itemsWithVersions[key].sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
-        
-        acc.push({
-            key,
-            versions: sortedVersions
-        });
-
-        return acc;
+            const latestVersion = itemsWithVersions[key].find(version => version.isLatest);
+            if (latestVersion && latestVersion.owner === cognitoIdentityId) {
+                acc.push({
+                    key,
+                    versions: itemsWithVersions[key].sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified))
+                });
+            }
+            return acc;
         }, []);
-
 
         console.log("Mapped items with versions to return:", JSON.stringify(itemsToReturn, null, 2));
         return {
